@@ -239,12 +239,24 @@
   .avatar-inner.has-img { cursor: grab; }
   .avatar-inner.dragging { cursor: grabbing; }
   .avatar-inner img {
+    position: absolute;
+    inset: 0;
     width: 100%; height: 100%;
-    object-fit: cover;
-    transform-origin: center;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
+  }
+  .avatar-inner .avatar-bg {
+    object-fit: cover;
+    filter: blur(14px);
+    transform: scale(1.25);
+    z-index: 0;
+    opacity: 0.65;
+  }
+  .avatar-inner .avatar-fg {
+    object-fit: contain;
+    z-index: 1;
+    transform-origin: center center;
   }
   .avatar-placeholder {
     font-size: 32px;
@@ -1400,7 +1412,7 @@
             <span class="drag-handle" title="드래그해서 이동">⋮⋮</span>
           </span>
         </div>
-        <div class="zoom-photo today-photo-wrap contain" id="today-photo-wrap" data-zoom-target="today">
+        <div class="zoom-photo today-photo-wrap" id="today-photo-wrap" data-zoom-target="today">
           <div class="empty-content">
             <span class="plus-icon">＋</span>
             <span class="plus-text">사진 추가</span>
@@ -1533,7 +1545,7 @@ function applyZoom(id) {
   const state = zoomStates[id];
   if (!state) return;
   let img;
-  if (id === 'avatar') img = document.querySelector('#avatar-inner img');
+  if (id === 'avatar') img = document.querySelector('#avatar-inner .avatar-fg');
   else if (id === 'today') img = document.querySelector('#today-photo-wrap img');
   else if (id.startsWith('photo-')) img = document.querySelector(`#photo-slot-${id.split('-')[1]} img`);
   if (img) {
@@ -1648,7 +1660,7 @@ function loadAvatar(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     const inner = document.getElementById('avatar-inner');
-    inner.innerHTML = `<img src="${ev.target.result}" alt="avatar">`;
+    inner.innerHTML = `<img class="avatar-bg" src="${ev.target.result}" alt=""><img class="avatar-fg" src="${ev.target.result}" alt="avatar">`;
     inner.classList.add('has-img');
     document.getElementById('avatar-ring').classList.add('has-img');
     resetZoom('avatar');
@@ -2130,6 +2142,31 @@ function saveImage() {
 }
 
 toggleEdit();
+
+// =================================================
+// PLAIN TEXT PASTE (strip formatting)
+// =================================================
+document.addEventListener('paste', (e) => {
+  const editable = e.target.closest && e.target.closest('[contenteditable="true"]');
+  if (!editable) return;
+  e.preventDefault();
+  const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+  if (document.queryCommandSupported && document.queryCommandSupported('insertText')) {
+    document.execCommand('insertText', false, text);
+  } else {
+    // Fallback: insert at cursor manually
+    const sel = window.getSelection();
+    if (!sel || !sel.rangeCount) return;
+    const range = sel.getRangeAt(0);
+    range.deleteContents();
+    const node = document.createTextNode(text);
+    range.insertNode(node);
+    range.setStartAfter(node);
+    range.setEndAfter(node);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+});
 </script>
 </body>
 </html>
