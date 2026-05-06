@@ -242,21 +242,11 @@
     position: absolute;
     inset: 0;
     width: 100%; height: 100%;
+    object-fit: cover;
+    transform-origin: center center;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
-  }
-  .avatar-inner .avatar-bg {
-    object-fit: cover;
-    filter: blur(14px);
-    transform: scale(1.25);
-    z-index: 0;
-    opacity: 0.65;
-  }
-  .avatar-inner .avatar-fg {
-    object-fit: contain;
-    z-index: 1;
-    transform-origin: center center;
   }
   .avatar-placeholder {
     font-size: 32px;
@@ -1384,7 +1374,6 @@
           <span class="icon">💬</span>
           <span>Messages</span>
           <span class="title-right">
-            <span class="ext" id="chat-count">0</span>
             <span class="drag-handle" title="드래그해서 이동">⋮⋮</span>
           </span>
         </div>
@@ -1545,7 +1534,7 @@ function applyZoom(id) {
   const state = zoomStates[id];
   if (!state) return;
   let img;
-  if (id === 'avatar') img = document.querySelector('#avatar-inner .avatar-fg');
+  if (id === 'avatar') img = document.querySelector('#avatar-inner img');
   else if (id === 'today') img = document.querySelector('#today-photo-wrap img');
   else if (id.startsWith('photo-')) img = document.querySelector(`#photo-slot-${id.split('-')[1]} img`);
   if (img) {
@@ -1660,7 +1649,7 @@ function loadAvatar(e) {
   const reader = new FileReader();
   reader.onload = ev => {
     const inner = document.getElementById('avatar-inner');
-    inner.innerHTML = `<img class="avatar-bg" src="${ev.target.result}" alt=""><img class="avatar-fg" src="${ev.target.result}" alt="avatar">`;
+    inner.innerHTML = `<img src="${ev.target.result}" alt="avatar">`;
     inner.classList.add('has-img');
     document.getElementById('avatar-ring').classList.add('has-img');
     resetZoom('avatar');
@@ -1734,7 +1723,7 @@ function deleteTodayPhoto(e) {
 // =================================================
 // EDIT MODE
 // =================================================
-let editMode = true;
+let editMode = false;
 function toggleEdit() {
   editMode = !editMode;
   const btn = document.getElementById('editToggle');
@@ -2009,8 +1998,10 @@ function scrollChatToBottom() {
 }
 
 function updateChatCount() {
+  const el = document.getElementById('chat-count');
+  if (!el) return;
   const count = document.querySelectorAll('#chat-window .chat-bubble').length;
-  document.getElementById('chat-count').textContent = count;
+  el.textContent = count;
 }
 
 document.getElementById('chat-input').addEventListener('keydown', e => {
