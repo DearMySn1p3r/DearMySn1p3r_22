@@ -240,13 +240,16 @@
   .avatar-inner.dragging { cursor: grabbing; }
   .avatar-inner img {
     position: absolute;
-    inset: 0;
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transform-origin: center center;
+    top: 50%;
+    left: 50%;
+    width: auto;
+    height: auto;
+    max-width: none;
+    max-height: none;
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
+    transform-origin: center center;
   }
   .avatar-placeholder {
     font-size: 32px;
@@ -463,7 +466,15 @@
   .card:hover .drag-handle { opacity: 0.85; color: var(--c5); }
   .drag-handle:hover { background: var(--c2); color: var(--c6) !important; opacity: 1 !important; }
   .drag-handle:active { cursor: grabbing; }
-  body.preview-mode .drag-handle { display: none; }
+  body.preview-mode .drag-handle,
+  body.preview-mode .add-btn,
+  body.preview-mode .dday-input-row,
+  body.preview-mode .todo-input-row,
+  body.preview-mode .chat-input-row,
+  body.preview-mode .dday-empty,
+  body.preview-mode .chat-empty {
+    display: none !important;
+  }
 
   /* drop indicator: the gap visual */
   .left-col.drag-over, .right-col.drag-over {
@@ -494,17 +505,13 @@
     user-select: none;
     -webkit-user-drag: none;
     pointer-events: none;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: translate(-50%, -50%);
-  }
-  .zoom-photo.contain img {
     width: auto;
     height: auto;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
+    max-width: none;
+    max-height: none;
+  }
+  .zoom-photo.contain img {
+    /* contain mode handled via JS scale */
   }
   .zoom-photo .plus-icon {
     font-size: 26px;
@@ -1526,29 +1533,70 @@ function setTheme(name, el) {
 // IMAGE ZOOM/PAN
 // =================================================
 const zoomStates = {};
+const imageMeta = {}; // id -> { coverScale, naturalW, naturalH }
+
 function getOrInitZoom(id) {
   if (!zoomStates[id]) zoomStates[id] = { scale: 1, x: 0, y: 0 };
   return zoomStates[id];
 }
+
+function computeCoverScale(container, naturalW, naturalH) {
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+  if (!W || !H || !naturalW || !naturalH) return 1;
+  return Math.max(W / naturalW, H / naturalH);
+}
+
+function getImgFor(id) {
+  if (id === 'avatar') return document.querySelector('#avatar-inner img');
+  if (id === 'today') return document.querySelector('#today-photo-wrap img');
+  if (id.startsWith('photo-')) return document.querySelector(`#photo-slot-${id.split('-')[1]} img`);
+  return null;
+}
+
+function getContainerFor(id) {
+  if (id === 'avatar') return document.getElementById('avatar-inner');
+  if (id === 'today') return document.getElementById('today-photo-wrap');
+  if (id.startsWith('photo-')) return document.getElementById(`photo-slot-${id.split('-')[1]}`);
+  return null;
+}
+
 function applyZoom(id) {
   const state = zoomStates[id];
   if (!state) return;
-  let img;
-  if (id === 'avatar') img = document.querySelector('#avatar-inner img');
-  else if (id === 'today') img = document.querySelector('#today-photo-wrap img');
-  else if (id.startsWith('photo-')) img = document.querySelector(`#photo-slot-${id.split('-')[1]} img`);
-  if (img) {
-    if (id === 'avatar') {
-      img.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
-    } else {
-      img.style.transform = `translate(calc(-50% + ${state.x}px), calc(-50% + ${state.y}px)) scale(${state.scale})`;
-    }
+  const img = getImgFor(id);
+  if (!img) return;
+
+  // Recompute cover scale if missing (e.g. on resize)
+  let meta = imageMeta[id];
+  if (!meta && img.naturalWidth) {
+    const container = getContainerFor(id);
+    meta = imageMeta[id] = {
+      coverScale: computeCoverScale(container, img.naturalWidth, img.naturalHeight),
+      naturalW: img.naturalWidth,
+      naturalH: img.naturalHeight
+    };
   }
+  const baseScale = (meta && meta.coverScale) || 1;
+  const totalScale = baseScale * state.scale;
+
+  img.style.transform =
+    `translate(-50%, -50%) translate(${state.x}px, ${state.y}px) scale(${totalScale})`;
 }
+
 function resetZoom(id, e) {
   if (e) e.stopPropagation();
   zoomStates[id] = { scale: 1, x: 0, y: 0 };
   applyZoom(id);
+}
+
+function setupImageMeta(id, img) {
+  const container = getContainerFor(id);
+  imageMeta[id] = {
+    coverScale: computeCoverScale(container, img.naturalWidth, img.naturalHeight),
+    naturalW: img.naturalWidth,
+    naturalH: img.naturalHeight
+  };
 }
 
 function attachZoomHandlers(container, id) {
@@ -1652,7 +1700,11 @@ function loadAvatar(e) {
     inner.innerHTML = `<img src="${ev.target.result}" alt="avatar">`;
     inner.classList.add('has-img');
     document.getElementById('avatar-ring').classList.add('has-img');
-    resetZoom('avatar');
+    const img = inner.querySelector('img');
+    img.onload = () => {
+      setupImageMeta('avatar', img);
+      resetZoom('avatar');
+    };
   };
   reader.readAsDataURL(file);
 }
@@ -1663,6 +1715,7 @@ function deleteAvatar(e) {
   inner.classList.remove('has-img');
   document.getElementById('avatar-ring').classList.remove('has-img');
   delete zoomStates.avatar;
+  delete imageMeta.avatar;
   document.getElementById('avatar-file').value = '';
 }
 function loadPhoto(e, idx) {
@@ -1673,11 +1726,14 @@ function loadPhoto(e, idx) {
     const slot = document.getElementById(`photo-slot-${idx}`);
     let img = slot.querySelector('img');
     if (!img) { img = document.createElement('img'); slot.prepend(img); }
+    img.onload = () => {
+      setupImageMeta(`photo-${idx}`, img);
+      resetZoom(`photo-${idx}`);
+    };
     img.src = ev.target.result;
     const empty = slot.querySelector('.empty-content');
     if (empty) empty.style.display = 'none';
     slot.classList.add('has-img');
-    resetZoom(`photo-${idx}`);
   };
   reader.readAsDataURL(file);
 }
@@ -1690,6 +1746,7 @@ function deletePhoto(e, idx) {
   if (empty) empty.style.display = '';
   slot.classList.remove('has-img');
   delete zoomStates[`photo-${idx}`];
+  delete imageMeta[`photo-${idx}`];
   document.getElementById(`photo-file-${idx}`).value = '';
 }
 function loadTodayPhoto(e) {
@@ -1700,11 +1757,14 @@ function loadTodayPhoto(e) {
     const wrap = document.getElementById('today-photo-wrap');
     let img = wrap.querySelector('img');
     if (!img) { img = document.createElement('img'); wrap.prepend(img); }
+    img.onload = () => {
+      setupImageMeta('today', img);
+      resetZoom('today');
+    };
     img.src = ev.target.result;
     const empty = wrap.querySelector('.empty-content');
     if (empty) empty.style.display = 'none';
     wrap.classList.add('has-img');
-    resetZoom('today');
   };
   reader.readAsDataURL(file);
 }
@@ -1717,6 +1777,7 @@ function deleteTodayPhoto(e) {
   if (empty) empty.style.display = '';
   wrap.classList.remove('has-img');
   delete zoomStates.today;
+  delete imageMeta.today;
   document.getElementById('today-file').value = '';
 }
 
@@ -2089,13 +2150,15 @@ setupCardDragAndDrop();
 function saveImage() {
   const area = document.getElementById('capture-area');
   const toolbar = document.getElementById('toolbar');
-  const notice = document.getElementById('edit-notice');
   const wasEditing = editMode;
 
-  toolbar.style.display = 'none';
-  notice.style.display = 'none';
+  // Switch to preview mode for clean capture
+  if (editMode) toggleEdit();
 
-  document.querySelectorAll('.photo-controls, .delete-btn, .todo-del, .avatar-controls, .drag-handle, .chat-bubble-controls').forEach(b => {
+  toolbar.style.display = 'none';
+
+  // Hide hover-only controls that may still be in DOM
+  document.querySelectorAll('.photo-controls, .delete-btn, .todo-del, .avatar-controls, .chat-bubble-controls').forEach(b => {
     b.style.display = 'none';
   });
 
@@ -2123,10 +2186,11 @@ function saveImage() {
 
     function restoreUI() {
       toolbar.style.display = 'flex';
-      if (wasEditing) notice.style.display = 'block';
-      document.querySelectorAll('.photo-controls, .delete-btn, .todo-del, .avatar-controls, .drag-handle, .chat-bubble-controls').forEach(b => {
+      document.querySelectorAll('.photo-controls, .delete-btn, .todo-del, .avatar-controls, .chat-bubble-controls').forEach(b => {
         b.style.display = '';
       });
+      // Restore edit mode if user was editing
+      if (wasEditing) toggleEdit();
       document.getElementById('saving-overlay').classList.remove('show');
     }
   }, 250);
