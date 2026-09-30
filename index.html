@@ -87,8 +87,8 @@ svg{display:block;flex-shrink:0}
 .box.filled .np{background:rgba(255,255,255,.75)}
 .np-ic{width:30px;height:30px;border-radius:50%;background:var(--paper);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .np-m{flex:1;min-width:0;display:flex;flex-direction:column}
-.np-t{font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.np-a{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np-t{font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:fit-content;max-width:100%}
+.np-a{font-size:10px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:fit-content;max-width:100%}
 .np-c{display:flex;align-items:center;gap:9px;flex-shrink:0}
 .np-bar{height:2px;border-radius:1px;background:var(--line);margin:8px 2px 6px;position:relative}
 .np-bar i{position:absolute;left:0;top:0;bottom:0;width:36%;background:var(--t3);border-radius:1px}
@@ -181,7 +181,7 @@ svg{display:block;flex-shrink:0}
 .polaroid{background:#fff;padding:8px 8px 10px;border:1px solid var(--line);box-shadow:0 2px 10px rgba(74,65,69,.05);transform:rotate(-.6deg);margin:4px 2px 0}
 .polaroid .zoom{border-radius:2px}
 .today-img{aspect-ratio:16/10}
-.entry{margin-top:11px;line-height:1.85;min-height:40px;white-space:pre-wrap;display:block}
+.entry{margin-top:11px;line-height:1.85;min-height:40px;white-space:pre-wrap;display:block;text-align:justify}
 
 /* rows */
 .list{display:flex;flex-direction:column}
@@ -204,7 +204,7 @@ svg{display:block;flex-shrink:0}
 .memo::before{content:'';position:absolute;left:50%;top:-6px;width:46px;height:13px;margin-left:-23px;background:var(--tapec);opacity:.85;transform:rotate(2deg)}
 .page.no-tape .memo::before{display:none}
 .box.filled .memo{background-color:rgba(255,255,255,.75)}
-.memo-t{display:block;font-size:12px;line-height:1.85;min-height:44px;white-space:pre-wrap}
+.memo-t{display:block;font-size:12px;line-height:1.85;min-height:44px;white-space:pre-wrap;text-align:justify}
 .memo-f{display:flex;justify-content:flex-end;align-items:center;gap:4px;margin-top:6px;font-size:11px;color:var(--t2);line-height:1.5}
 .memo-dash{color:var(--t3)}
 .viewing .memo-n:empty,.capturing .memo-n:empty{display:none}
@@ -218,14 +218,14 @@ svg{display:block;flex-shrink:0}
 .chat{background:var(--field);border-radius:8px;padding:10px;min-height:100px;display:flex;flex-direction:column;gap:5px;position:relative}
 .chat-none{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--t3);pointer-events:none}
 .chat-none.hide{display:none}
-.b{max-width:78%;padding:5px 11px;font-size:11.5px;line-height:1.5;border-radius:12px;position:relative;overflow-wrap:anywhere;word-break:keep-all}
+.b{max-width:78%;padding:5px 11px;font-size:11.5px;line-height:1.5;border-radius:12px;position:relative;overflow-wrap:anywhere;word-break:normal}
 .b.me{align-self:flex-end;background:var(--mebg);color:var(--t1);border-bottom-right-radius:4px}
 .b.other{align-self:flex-start;background:var(--paper);color:var(--t1);border:1px solid var(--line);border-bottom-left-radius:4px}
 .b-who{font-size:10px;color:var(--t3);line-height:1;margin:4px 3px -1px}
 .b-who.me{align-self:flex-end}
 .b-who.other{align-self:flex-start}
 .b-who:first-child{margin-top:0}
-.b-t{outline:none;min-width:6px;margin:0;padding:0;border-radius:3px}
+.b-t{text-align:justify;outline:none;min-width:6px;margin:0;padding:0;border-radius:3px}
 .editing .b{cursor:text}
 .editing .b:hover{box-shadow:0 0 0 1.5px var(--line2)}
 .b-t:focus{background:rgba(255,255,255,.55)!important}
@@ -274,6 +274,9 @@ svg{display:block;flex-shrink:0}
 .spin{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--line2);border-top-color:var(--t1);animation:sp .8s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 input[type=file]{display:none}
+.grid{text-align:justify}
+.entry.ed,.memo-t.ed,.b-t.ed,.r-t.ed,.memo-n.ed{text-align:justify;word-break:normal;overflow-wrap:anywhere;line-break:strict;text-wrap:pretty}
+.r-t{flex:1 1 auto;min-width:0}
 .capturing .todo-list,.capturing .chat{max-height:none;overflow:visible}
 .pop.fill{width:320px;padding:12px 13px}
 .fill-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
@@ -425,7 +428,7 @@ input[type=file]{display:none}
             <div class="bh"><h3>Music Cloud</h3><span class="rule"></span><span class="grip"></span></div>
             <div class="np">
               <span class="np-ic" id="np-ic"></span>
-              <div class="np-m"><span class="np-t" id="np-t">곡 제목</span><span class="np-a" id="np-a">아티스트</span></div>
+              <div class="np-m"><span class="np-t ed" id="np-t" data-ph="곡 제목">곡 제목</span><span class="np-a ed" id="np-a" data-ph="아티스트">아티스트</span></div>
               <div class="np-c" id="np-c"></div>
             </div>
             <div class="np-bar"><i></i></div>
@@ -952,6 +955,12 @@ function syncNP() {
   document.getElementById('np-a').textContent = r ? (r.querySelector('.r-s').textContent.trim() || '아티스트') : '아티스트';
 }
 document.getElementById('music-list').addEventListener('input', syncNP);
+['np-t', 'np-a'].forEach(id => document.getElementById(id).addEventListener('input', () => {
+  let r = document.querySelector('#music-list .row');
+  const t = document.getElementById('np-t').textContent.trim(), a = document.getElementById('np-a').textContent.trim();
+  if (!r) { addMusic(t, a); r = document.querySelector('#music-list .row'); document.getElementById(id).focus(); return; }
+  r.querySelector(id === 'np-t' ? '.r-t' : '.r-s').textContent = id === 'np-t' ? t : a;
+}));
 function renumber() {
   syncNP(); document.querySelectorAll('#music-list .num').forEach((n, i) => n.textContent = pad(i + 1)); }
 onEnter('m-title', () => document.getElementById('m-artist').focus());
