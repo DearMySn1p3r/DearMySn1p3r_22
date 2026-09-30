@@ -68,11 +68,10 @@ svg{display:block;flex-shrink:0}
 .sw.on{box-shadow:0 0 0 1.5px var(--t1)}
 .wide-btn{width:100%;justify-content:center;height:30px!important}
 .note{font-size:10px;color:var(--t3);line-height:1.5;margin-top:7px}
-.reset-pg{border-top:1px solid var(--line);padding-top:12px;margin-bottom:0}
 
 /* ═════════ PAGE (captured) ═════════ */
 #snap{border-radius:20px}
-.capturing #snap{padding:20px;background:var(--bg)}
+.capturing #snap{padding:20px;margin:-20px;background:var(--bg)}
 .page{position:relative;background:var(--paper);border:1px solid var(--line2);border-radius:14px;padding:30px 30px 28px;font-size:12px;line-height:1.55;box-shadow:inset 0 0 0 5px var(--paper),inset 0 0 0 6px var(--line)}
 
 .ed{outline:none;border-radius:4px;padding:0 3px;margin:0 -3px;transition:background .15s;overflow-wrap:anywhere;word-break:keep-all}
@@ -341,6 +340,7 @@ input[type=file]{display:none}
         <button class="nb" id="oocBtn" title="OOC 복사"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg><span>OOC 복사</span></button>
         <button class="nb" id="fillBtn" title="결과 붙여넣기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2.5"/><path d="M9 4V3h6v1M9 11h6M9 15h4"/></svg><span>붙여넣기</span></button>
         <button class="nb" id="decoBtn" title="꾸미기"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20c2.5 0 4-1.5 4-3.5a2.5 2.5 0 0 0-2.5-2.5C4.5 14 4 15.5 4 17z"/><path d="M8.5 14.5L19 4a1.4 1.4 0 0 1 2 2L10.5 16.5"/></svg><span>꾸미기</span></button>
+        <button class="nb" id="resetBtn" title="초기화"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12a8 8 0 1 0 2.34-5.66"/><path d="M4 4v4h4"/></svg><span>초기화</span></button>
       </div>
       <div class="mode">
         <button class="on" data-m="edit">편집</button>
@@ -377,7 +377,6 @@ input[type=file]{display:none}
         <div class="opt">사진 테이프<div class="seg" data-opt="tape"><button class="on" data-v="on">켜기</button><button data-v="off">끄기</button></div></div>
         <div class="opt">제목 형광펜<div class="seg" data-opt="hl"><button class="on" data-v="on">켜기</button><button data-v="off">끄기</button></div></div>
       </div>
-      <div class="pg reset-pg"><button class="tb wide-btn" id="resetBtn">전부 지우고 새로 쓰기</button><p class="note">쓰던 내용은 이 브라우저에 자동으로 저장돼요</p></div>
     </div>
   </div>
 </header>
@@ -1692,7 +1691,7 @@ new MutationObserver(queueSave).observe(document.documentElement, { subtree: tru
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushSave(); });
 window.addEventListener('pagehide', flushSave);
 document.getElementById('resetBtn').addEventListener('click', () => {
-  if (!confirm('지금 쓴 내용을 모두 지우고 처음부터 새로 쓸까요?')) return;
+  if (!confirm('글, 사진, 꾸미기 설정까지 전부 지우고 처음 상태로 돌릴까요?')) return;
   ready = false; clearTimeout(saveT);
   Store.clear().then(() => location.reload());
 });
