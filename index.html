@@ -102,6 +102,14 @@ svg{display:block;flex-shrink:0}
 .divider .orn{display:flex;align-items:center;justify-content:center}
 .page.no-orn .divider .orn{display:none}
 .page.no-orn .divider{gap:0}
+.page.no-link .amp{display:none}
+.page.no-link .link-l{gap:0}
+.icrow{margin-bottom:8px}
+.icrow>span{display:block;font-size:10.5px;color:var(--t2);margin-bottom:3px}
+.ics{display:flex;flex-wrap:wrap;gap:2px}
+.ics button{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid transparent;color:var(--t2);font-size:9px}
+.ics button:hover{background:var(--field)}
+.ics button.on{border-color:var(--t1);background:var(--field)}
 .page.bd-dash .box{border-style:dashed;border-color:var(--line2)}
 .page.bd-none .box{border-color:transparent}
 .box.filled .zoom:not(.has-img),.box.filled .chat,.box.filled .memo{background:rgba(255,255,255,.5)}
@@ -357,12 +365,17 @@ input[type=file]{display:none}
       <div class="pg"><h4>칸 색</h4><div class="sws" id="boxSw"></div></div>
       <div class="pg"><h4>포인트 색 <small>체크 · 디데이 · 말풍선</small></h4><div class="sws" id="themes"></div></div>
       <div class="pg"><h4>제목 색</h4><div class="sws" id="titleSw"></div></div>
+      <div class="pg"><h4>선 색 <small>구분선 · 칸 테두리</small></h4><div class="sws" id="lineSw"></div></div>
+      <div class="pg"><h4>장식 모양</h4>
+        <div class="icrow"><span>구분선</span><div class="ics" id="ornPick"></div></div>
+        <div class="icrow"><span>두 사람 사이</span><div class="ics" id="linkPick"></div></div>
+      </div>
+      <div class="pg"><h4>장식 색</h4><div class="sws" id="ornSw"></div></div>
       <div class="pg">
         <h4>장식</h4>
         <div class="opt">칸 테두리<div class="seg" data-opt="bd"><button class="on" data-v="solid">실선</button><button data-v="dash">점선</button><button data-v="none">없음</button></div></div>
         <div class="opt">사진 테이프<div class="seg" data-opt="tape"><button class="on" data-v="on">켜기</button><button data-v="off">끄기</button></div></div>
         <div class="opt">제목 형광펜<div class="seg" data-opt="hl"><button class="on" data-v="on">켜기</button><button data-v="off">끄기</button></div></div>
-        <div class="opt">구분선 장식<div class="seg" data-opt="orn"><button class="on" data-v="on">켜기</button><button data-v="off">끄기</button></div></div>
       </div>
       <div class="pg reset-pg"><button class="tb wide-btn" id="resetBtn">전부 지우고 새로 쓰기</button><p class="note">쓰던 내용은 이 브라우저에 자동으로 저장돼요</p></div>
     </div>
@@ -389,7 +402,7 @@ input[type=file]{display:none}
           <span class="name ed" id="name-me" data-ph="이름">이름</span>
           <span class="handle ed" id="handle-me" data-ph="@아이디">@handle</span>
         </div>
-        <div class="link"><div class="link-l"><i></i><span class="amp"><svg width="15" height="15" viewBox="0 0 24 24"><path d="M12 20.3s-7.6-4.6-7.6-10.1A4.3 4.3 0 0 1 12 7.5a4.3 4.3 0 0 1 7.6 2.7c0 5.5-7.6 10.1-7.6 10.1z" fill="none" stroke="#c9b9bd" stroke-width="1.5" stroke-linejoin="round"/></svg></span><i></i></div></div>
+        <div class="link"><div class="link-l"><i></i><span class="amp" id="amp"></span><i></i></div></div>
         <div class="p">
           <div class="ava-ring"><div class="zoom ava" data-zoom="avatar2">
             <div class="ph" data-ic="plus"></div>
@@ -526,6 +539,41 @@ const SETS = {
   ]}
 };
 
+// ornament shapes (16×16) — drawn with a real colour so they show in the saved image too
+const SHAPES = {
+  sparkle: c => `<path d="M8 1c.5 3.6 2 5.3 6 6-4 .7-5.5 2.4-6 6-.5-3.6-2-5.3-6-6 4-.7 5.5-2.4 6-6z" fill="${c}"/>`,
+  heartline: c => `<path d="M8 13.3S2.6 10 2.6 6.1A2.9 2.9 0 0 1 8 4.8a2.9 2.9 0 0 1 5.4 1.3C13.4 10 8 13.3 8 13.3z" fill="none" stroke="${c}" stroke-width="1.1" stroke-linejoin="round"/>`,
+  heart: c => `<path d="M8 13.6S2.2 10.1 2.2 5.9A3 3 0 0 1 8 4.6a3 3 0 0 1 5.8 1.3C13.8 10.1 8 13.6 8 13.6z" fill="${c}"/>`,
+  star: c => `<path d="M8 1.8l1.85 3.85 4.2.6-3.05 2.95.72 4.2L8 11.4l-3.72 2 .72-4.2-3.05-2.95 4.2-.6z" fill="${c}" stroke="${c}" stroke-width=".6" stroke-linejoin="round"/>`,
+  flower: c => [0,1,2,3,4].map(k => { const a = (-90 + 72 * k) * Math.PI / 180; return `<circle cx="${(8 + 3.3 * Math.cos(a)).toFixed(2)}" cy="${(8.3 + 3.3 * Math.sin(a)).toFixed(2)}" r="2.6" fill="${c}"/>`; }).join('') + `<circle cx="8" cy="8.3" r="1.7" fill="#fff" opacity=".85"/>`,
+  moon: c => `<path d="M10.6 2.3A5.9 5.9 0 1 0 13.9 11a4.7 4.7 0 0 1-3.3-8.7z" fill="${c}"/>`,
+  clover: c => `<g fill="${c}"><circle cx="8" cy="4.9" r="2.6"/><circle cx="4.9" cy="8" r="2.6"/><circle cx="11.1" cy="8" r="2.6"/><circle cx="8" cy="11.1" r="2.6"/></g>`,
+  dots: c => `<g fill="${c}"><circle cx="3" cy="8" r="1.1"/><circle cx="8" cy="8" r="1.7"/><circle cx="13" cy="8" r="1.1"/></g>`
+};
+const deco = { orn: 'sparkle', link: 'heartline', color: null };
+const shapeSvg = (k, c, sz = 16) => `<svg width="${sz}" height="${sz}" viewBox="0 0 16 16">${SHAPES[k](c)}</svg>`;
+function paintDeco() {
+  const pg = document.getElementById('page');
+  document.getElementById('orn').innerHTML = deco.orn !== 'none' ? shapeSvg(deco.orn, deco.color || '#cbbdb9') : '';
+  document.getElementById('amp').innerHTML = deco.link !== 'none' ? shapeSvg(deco.link, deco.color || '#c9b9bd', 15) : '';
+  pg.classList.toggle('no-orn', deco.orn === 'none');
+  pg.classList.toggle('no-link', deco.link === 'none');
+}
+function iconPicker(id, key) {
+  const wrap = document.getElementById(id);
+  [...Object.keys(SHAPES), 'none'].forEach(k => {
+    const b = document.createElement('button');
+    b.dataset.v = k;
+    b.title = k === 'none' ? '없음' : '';
+    b.innerHTML = k === 'none' ? '없음' : shapeSvg(k, '#9d9195', 13);
+    b.classList.toggle('on', deco[key] === k);
+    b.addEventListener('click', () => {
+      wrap.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      deco[key] = k; paintDeco();
+    });
+    wrap.appendChild(b);
+  });
+}
 function paintIcons() {
   document.querySelectorAll('[data-act="reset"]').forEach(b => b.innerHTML = S(P.reset, 11));
   document.querySelectorAll('[data-act="del"]').forEach(b => b.innerHTML = S(P.x, 11));
@@ -539,7 +587,7 @@ function paintIcons() {
     `<svg width="10" height="10" viewBox="0 0 24 24" fill="${G}"><path d="M6 5h2.5v14H6zM20 5v14L9.5 12z"/></svg>` +
     `<svg width="13" height="13" viewBox="0 0 24 24" fill="${G}"><path d="M8 5.5v13l11-6.5z"/></svg>` +
     `<svg width="10" height="10" viewBox="0 0 24 24" fill="${G}"><path d="M15.5 5H18v14h-2.5zM4 5v14l10.5-7z"/></svg>`;
-  document.getElementById('orn').innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M8 1c.5 3.6 2 5.3 6 6-4 .7-5.5 2.4-6 6-.5-3.6-2-5.3-6-6 4-.7 5.5-2.4 6-6z" fill="#cbbdb9"/></svg>`;
+  paintDeco();
 }
 
 // ───────── mood / weather chips ─────────
@@ -665,13 +713,27 @@ customSwatch('boxSw', '#fdf1f4', c => {
   document.querySelectorAll('.box').forEach(b => b.classList.add('filled'));
 });
 customSwatch('titleSw', '#4a4145', c => root.setProperty('--titlec', c));
+// line colour: only the diary sheet's lines (the site bar keeps its own)
+const LINES = [null, '#f0b8c6', '#ecc3ae', '#e2cf8f', '#b9d1b1', '#b3c9e2', '#cbbfe6', '#b5a9ad'];
+function applyLine(c) {
+  if (!c) { page.style.removeProperty('--line'); page.style.removeProperty('--line2'); return; }
+  page.style.setProperty('--line2', c);
+  page.style.setProperty('--line', mix(c, '#ffffff', .4));
+}
+swatchRow('lineSw', LINES, v => v, applyLine);
+customSwatch('lineSw', '#f0b8c6', applyLine);
+const ORNS = [null, '#f2a7ba', '#eeb899', '#e5c66f', '#a9cba0', '#9fbde0', '#bba9e3', '#8e8589'];
+const setOrnColor = c => { deco.color = c; paintDeco(); };
+swatchRow('ornSw', ORNS, v => v || '#cbbdb9', setOrnColor);
+customSwatch('ornSw', '#f2a7ba', setOrnColor);
+iconPicker('ornPick', 'orn');
+iconPicker('linkPick', 'link');
 document.querySelectorAll('.opt .seg').forEach(g => g.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
   g.querySelectorAll('button').forEach(x => x.classList.remove('on'));
   b.classList.add('on');
   const k = g.dataset.opt, v = b.dataset.v;
   if (k === 'bd') { page.classList.remove('bd-dash', 'bd-none'); if (v !== 'solid') page.classList.add('bd-' + v); }
   if (k === 'tape') page.classList.toggle('no-tape', v === 'off');
-  if (k === 'orn') page.classList.toggle('no-orn', v === 'off');
   if (k === 'hl') page.classList.toggle('no-hl', v === 'off');
 })));
 
@@ -1572,8 +1634,9 @@ function snapshot() {
   });
   st.stickers = [...page.querySelectorAll('.stk')].map(el => ({ src: el.querySelector('img').src, left: el.style.left, top: el.style.top, width: el.style.width, rot: +el.dataset.rot || 0 }));
   st.order = [...cols].map(c => [...c.querySelectorAll('.box')].map(boxKey));
-  st.sw = Object.fromEntries(['paperSw', 'boxSw', 'themes', 'titleSw'].map(id => [id, swState(id)]));
+  st.sw = Object.fromEntries(['paperSw', 'boxSw', 'themes', 'titleSw', 'lineSw', 'ornSw'].map(id => [id, swState(id)]));
   st.opts = Object.fromEntries([...document.querySelectorAll('.opt .seg')].map(g => [g.dataset.opt, (g.querySelector('button.on') || {}).dataset?.v]));
+  st.deco = { orn: deco.orn, link: deco.link };
   return st;
 }
 function restore(st) {
@@ -1604,12 +1667,15 @@ function restore(st) {
     st.order.forEach((keys, i) => keys.forEach(k => boxes[k] && cols[i] && cols[i].appendChild(boxes[k])));
   }
   // colours: replay the same clicks so every derived colour comes back too
-  ['paperSw', 'boxSw', 'themes', 'titleSw'].forEach(id => {
+  ['paperSw', 'boxSw', 'themes', 'titleSw', 'lineSw', 'ornSw'].forEach(id => {
     const s = st.sw && st.sw[id]; if (!s) return;
     const w = document.getElementById(id);
     if (s.custom) { const inp = w.querySelector('.sw.custom input'); inp.value = s.custom; inp.dispatchEvent(new Event('input')); }
     else if (s.on > 0) { const b = w.querySelectorAll('.sw')[s.on]; if (b && b.tagName === 'BUTTON') b.click(); }
   });
+  const dv = st.deco || {};
+  if (!dv.orn && st.opts && st.opts.orn === 'off') dv.orn = 'none';
+  [['ornPick', dv.orn], ['linkPick', dv.link]].forEach(([id, v]) => { const b = v && document.querySelector(`#${id} button[data-v="${v}"]`); if (b) b.click(); });
   Object.entries(st.opts || {}).forEach(([k, v]) => { const b = document.querySelector(`.seg[data-opt="${k}"] button[data-v="${v}"]`); if (b) b.click(); });
   syncMemo(); relabel(); syncChatName();
   if (st.edit === false) setMode(false);
