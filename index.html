@@ -26,7 +26,7 @@
 html{overflow-x:clip}
 body{font-family:var(--font);background:var(--bg);color:var(--t1);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:clip;letter-spacing:-.01em}
 button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;letter-spacing:inherit}
-input{font:inherit;color:inherit;letter-spacing:inherit}
+input,textarea{font:inherit;color:inherit;letter-spacing:inherit}
 svg{display:block;flex-shrink:0}
 
 .wrap{max-width:720px;margin:0 auto;padding:22px 14px 48px}
@@ -226,7 +226,7 @@ svg{display:block;flex-shrink:0}
 .b-who.me{align-self:flex-end}
 .b-who.other{align-self:flex-start}
 .b-who:first-child{margin-top:0}
-.b-t{text-align:justify;outline:none;min-width:6px;margin:0;padding:0;border-radius:3px}
+.b-t{white-space:pre-wrap;text-align:justify;outline:none;min-width:6px;margin:0;padding:0;border-radius:3px}
 .editing .b{cursor:text}
 .editing .b:hover{box-shadow:0 0 0 1.5px var(--line2)}
 .b-t:focus{background:rgba(255,255,255,.55)!important}
@@ -245,6 +245,8 @@ svg{display:block;flex-shrink:0}
 .plus{width:26px;height:26px;border-radius:50%;border:1px solid var(--line2);color:var(--t2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s;background:var(--paper)}
 .plus:hover{border-color:var(--t1);color:var(--t1)}
 .who{height:26px;padding:0 10px;border-radius:99px;font-size:11px;flex-shrink:0;border:1px solid var(--line2);background:var(--soft);color:var(--t1);transition:.15s}
+.inp.ta{height:26px;min-height:26px;max-height:120px;padding:5px 12px;line-height:14px;resize:none;overflow-y:hidden;border-radius:13px;display:block;transition:border-color .15s}
+.add:has(.ta){align-items:flex-end}
 .inp.nm{flex:0 0 64px;padding:0 9px;text-align:center}
 .who.other{background:var(--paper);color:var(--t2)}
 
@@ -420,7 +422,7 @@ input[type=file]{display:none}
             <div class="add">
               <button class="who" id="who" title="보내는 쪽 바꾸기">나</button>
               <input class="inp nm" id="chat-name" placeholder="이름" maxlength="20">
-              <input class="inp" id="chat-in" placeholder="메시지 입력">
+              <textarea class="inp ta" id="chat-in" rows="1" placeholder="메시지 입력" title="Enter 보내기 · Shift+Enter 줄바꿈"></textarea>
               <button class="plus" id="chat-add" title="추가"></button>
             </div>
           </section>
@@ -933,7 +935,7 @@ function xBtn(fn) {
 }
 function onEnter(id, fn) {
   document.getElementById(id).addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); fn(); }
+    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); fn(); }
   });
 }
 
@@ -1031,8 +1033,8 @@ chatName.addEventListener('input', () => {
 onEnter('chat-name', () => document.getElementById('chat-in').focus());
 function sendChat(text, s2, whoName) {
   const input = document.getElementById('chat-in');
-  const t = typeof text === 'string' ? text : input.value.trim();
-  if (!t) return;
+  const t = typeof text === 'string' ? text : input.value.replace(/^\s*\n|\s+$/g, '');
+  if (!t.trim()) return;
   const side0 = side; if (s2) side = s2;
   const b = document.createElement('div');
   b.className = 'b ' + side;
@@ -1060,7 +1062,7 @@ function sendChat(text, s2, whoName) {
   const chat = document.getElementById('chat');
   chat.appendChild(b);
   chat.scrollTop = chat.scrollHeight;
-  input.value = '';
+  input.value = ''; if (typeof growChatIn === 'function') growChatIn();
   side = side0;
   chatNone();
 }
@@ -1088,6 +1090,9 @@ function chatNone() {
   document.getElementById('chat-none').classList.toggle('hide', document.querySelectorAll('#chat .b').length > 0);
 }
 onEnter('chat-in', sendChat);
+const chatIn = document.getElementById('chat-in');
+function growChatIn() { chatIn.style.height = '26px'; chatIn.style.height = Math.min(120, chatIn.scrollHeight + 2) + 'px'; chatIn.style.overflowY = chatIn.scrollHeight > 118 ? 'auto' : 'hidden'; }
+chatIn.addEventListener('input', growChatIn);
 document.getElementById('chat-add').addEventListener('click', () => sendChat());
 
 // ───────── paste several lines at once ─────────
@@ -1510,6 +1515,7 @@ document.addEventListener('keydown', e => {
   const el = e.target.closest && e.target.closest('.ed[contenteditable="true"]');
   if (!el || e.key !== 'Enter' || multiLine(el)) return;
   e.preventDefault();
+  if (e.shiftKey && el.classList.contains('b-t')) { document.execCommand('insertLineBreak'); return; }
   if (!e.isComposing && e.keyCode !== 229) el.blur();
 });
 document.addEventListener('input', e => {
